@@ -361,3 +361,7 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+BadServer/x64/
+BadServer/SFML/
+BadServer/*vcxproj*
