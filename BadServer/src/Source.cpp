@@ -25,7 +25,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 		{
 			std::wstring tempNick = L"";
 
-			if (!(packet >> tempNick)) { std::cout << "prefix_regNick_error!" << "\n"; continue; }
+			if (!(packet >> tempNick)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			if (nm->addClient(tempNick, connection.ipAddress, connection.port))
@@ -47,13 +47,13 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 		{
 			std::wstring tempNick = L"";
 
-			if (!(packet >> tempNick)) { std::cout << "prefix_regNick_error!" << "\n"; continue; }
+			if (!(packet >> tempNick)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			for (size_t i = 0; i < clientsVec.size(); ++i)
 			{
 				packet.clear();
-				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y << clientsVec[i]->getIsGhost();
+				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y;
 				nm->sockSend(packet, connection.ipAddress, connection.port);
 			}
 
@@ -62,9 +62,23 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 				if (clientsVec[i]->getNickname() == clientsVec.back()->getNickname()) { continue; }
 
 				packet.clear();
-				packet << prefix << clientsVec.back()->getNickname() << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y << clientsVec.back()->getIsGhost();
+				packet << prefix << clientsVec.back()->getNickname() << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y;
 				nm->sockSend(packet, clientsVec[i]->getIpAddress(), clientsVec[i]->getPort());
 			}
+		}
+
+		else if (prefix == L"respawn")
+		{
+			std::wstring respawnedNick = L"";
+			sf::Vector2f startPos(0.f, 0.f);
+
+			if (!(packet >> respawnedNick && packet >> startPos.x && packet >> startPos.y)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
+
+			std::lock_guard<std::mutex> lock(clients_mtx);
+			packet.clear();
+			packet << prefix << respawnedNick << startPos.x << startPos.y;
+			nm->sendPacketToAllClients(packet);
+
 		}
 
 		else if (prefix == L"mousePos")
@@ -72,12 +86,11 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			sf::Vector2f tempMousePos(0.f, 0.f);
 			std::wstring tempNick = L"";
 
-			if (!(packet >> tempNick && packet >> tempMousePos.x && packet >> tempMousePos.y)) { std::cout << "prefix_mousePos_error!" << "\n"; continue; }
+			if (!(packet >> tempNick && packet >> tempMousePos.x && packet >> tempMousePos.y)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			packet.clear();
 			packet << prefix << tempNick << tempMousePos.x << tempMousePos.y;
-
 			nm->sendPacketToAllClients(packet);
 		}
 
@@ -86,7 +99,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			std::wstring tempNick = L"";
 			sf::Vector2f tempStepPos(0.f, 0.f);
 
-			if (!(packet >> tempNick && packet >> tempStepPos.x && packet >> tempStepPos.y)) { std::cout << "prefix_move_error!" << "\n"; continue; }
+			if (!(packet >> tempNick && packet >> tempStepPos.x && packet >> tempStepPos.y)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			for (size_t i = 0; i < clientsVec.size(); ++i)
@@ -109,12 +122,11 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			sf::Vector2f tempAimPos(0.f, 0.f);
 			sf::Vector2f tempBulletPos(0.f, 0.f);
 
-			if (!(packet >> tempCreatorNick && packet >> tempAimPos.x && packet >> tempAimPos.y && packet >> tempBulletPos.x && packet >> tempBulletPos.y)) { std::cout << "prefix_createBullet_error!" << "\n"; continue; }
-
-			packet.clear();
-			packet << prefix << tempCreatorNick << tempAimPos.x << tempAimPos.y << tempBulletPos.x << tempBulletPos.y;
+			if (!(packet >> tempCreatorNick && packet >> tempAimPos.x && packet >> tempAimPos.y && packet >> tempBulletPos.x && packet >> tempBulletPos.y)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
+			packet.clear();
+			packet << prefix << tempCreatorNick << tempAimPos.x << tempAimPos.y << tempBulletPos.x << tempBulletPos.y;
 			nm->sendPacketToAllClients(packet);
 		}
 
@@ -123,12 +135,11 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			std::wstring tempNick = L"";
 			std::wstring msg = L"";
 
-			if (!(packet >> tempNick && packet >> msg)) { std::cout << "prefix_msg_error!" << "\n"; continue; }
-
-			packet.clear();
-			packet << prefix << tempNick << msg;
+			if (!(packet >> tempNick && packet >> msg)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
+			packet.clear();
+			packet << prefix << tempNick << msg;
 			nm->sendPacketToAllClients(packet);
 		}
 
@@ -137,7 +148,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			std::wstring ghostNick = L"";
 			bool isGhost = false;
 
-			if (!(packet >> ghostNick && packet >> isGhost)) { std::cout << "prefix_ghost_error!" << "\n"; continue; }
+			if (!(packet >> ghostNick && packet >> isGhost)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			for (size_t i = 0; i < clientsVec.size(); ++i)
@@ -158,7 +169,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 		{
 			std::wstring tempNick = L"";
 
-			if (!(packet >> tempNick)) { std::cout << "prefix_ping_error!" << "\n"; continue; }
+			if (!(packet >> tempNick)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			for (size_t i = 0; i < clientsVec.size(); ++i)
