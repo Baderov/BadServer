@@ -67,6 +67,11 @@ void Client::moveClient(sf::Vector2f stepPos)
 	this->pos += std::move(stepPos);
 }
 
+void Client::setClientPos(sf::Vector2f pos)
+{
+	this->pos = std::move(pos);
+}
+
 void Client::setNumOfHeartbeatChecks(int numOfHeartbeatChecks)
 {
 	this->numOfHeartbeatChecks = std::move(numOfHeartbeatChecks);

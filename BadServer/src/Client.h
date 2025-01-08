@@ -26,6 +26,7 @@ public:
 	bool getIsBot();
 
 	void moveClient(sf::Vector2f stepPos);
+	void setClientPos(sf::Vector2f pos);
 	void setNumOfHeartbeatChecks(int numOfHeartbeatChecks);
 	void setIsGhost(bool isGhost);
 };
