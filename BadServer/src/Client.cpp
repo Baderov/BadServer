@@ -9,11 +9,11 @@ Client::Client(bool& isBot, std::wstring& nickname, sf::IpAddress& ipAddress, un
 	this->ipAddress = ipAddress;
 	this->port = port;
 	isGhost = false;
+	HP = 100;
 
-	if (this->nickname == L"Bot0" || this->nickname == L"Baderov") { pos = sf::Vector2f(2500.f, 2500.f); }
-	else if (this->nickname == L"Bot1" || this->nickname == L"Baderovd") { pos = sf::Vector2f(2800.f, 2800.f); }
-	else { pos = sf::Vector2f(static_cast<float>(500 + rand() % 4000), static_cast<float>(500 + rand() % 4000)); }
+	pos = sf::Vector2f(static_cast<float>(500 + rand() % 4000), static_cast<float>(500 + rand() % 4000));
 }
+
 
 
 // GETTERS.
@@ -47,6 +47,18 @@ int Client::getNumOfHeartbeatChecks()
 	return numOfHeartbeatChecks;
 }
 
+int Client::getHP()
+{
+	int HP = this->HP;
+	return HP;
+}
+
+int Client::getNumOfKills()
+{
+	int numOfKills = this->numOfKills;
+	return numOfKills;
+}
+
 bool Client::getIsGhost()
 {
 	bool isGhost = this->isGhost;
@@ -62,12 +74,7 @@ bool Client::getIsBot()
 
 
 // SETTERS.
-void Client::moveClient(sf::Vector2f stepPos)
-{
-	this->pos += std::move(stepPos);
-}
-
-void Client::setClientPos(sf::Vector2f pos)
+void Client::setPos(sf::Vector2f pos)
 {
 	this->pos = std::move(pos);
 }
@@ -75,6 +82,16 @@ void Client::setClientPos(sf::Vector2f pos)
 void Client::setNumOfHeartbeatChecks(int numOfHeartbeatChecks)
 {
 	this->numOfHeartbeatChecks = std::move(numOfHeartbeatChecks);
+}
+
+void Client::setHP(int HP)
+{
+	this->HP = std::move(HP);
+}
+
+void Client::setNumOfKills(int numOfKills)
+{
+	this->numOfKills = std::move(numOfKills);
 }
 
 void Client::setIsGhost(bool isGhost)

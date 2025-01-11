@@ -8,7 +8,8 @@ NetworkManager::NetworkManager() { consoleSettings(); bindPort(); addBots(); }
 void NetworkManager::bindPort()
 {
 	const auto RetryCount = 3;
-	const sf::IpAddress ServerIp = sf::IpAddress::getLocalAddress();
+	//const sf::IpAddress ServerIp = "26.54.85.12"; // global IP.
+	const sf::IpAddress ServerIp = sf::IpAddress::getLocalAddress(); // local IP.
 	const unsigned short ServerPort = 2000;
 
 	for (int connectionTries = 1; sock.bind(ServerPort, ServerIp) != sf::Socket::Done; ++connectionTries)

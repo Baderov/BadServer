@@ -53,7 +53,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			for (size_t i = 0; i < clientsVec.size(); ++i)
 			{
 				packet.clear();
-				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y;
+				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y << clientsVec[i]->getHP();
 				nm->sockSend(packet, connection.ipAddress, connection.port);
 			}
 
@@ -62,7 +62,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 				if (clientsVec[i]->getNickname() == clientNick) { continue; }
 
 				packet.clear();
-				packet << prefix << clientNick << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y;
+				packet << prefix << clientNick << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y << clientsVec.back()->getHP();
 				nm->sockSend(packet, clientsVec[i]->getIpAddress(), clientsVec[i]->getPort());
 			}
 		}
@@ -79,7 +79,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			{
 				if (clientsVec[i]->getNickname() != clientNick) { continue; }
 
-				clientsVec[i]->setClientPos(clientStartPos);
+				clientsVec[i]->setPos(clientStartPos);
 
 				break;
 			}
@@ -107,6 +107,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 		{
 			std::wstring clientNick = L"";
 			sf::Vector2f clientStepPos(0.f, 0.f);
+			sf::Vector2f clientNewPos(0.f, 0.f);
 
 			if (!(packet >> clientNick && packet >> clientStepPos.x && packet >> clientStepPos.y)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
@@ -115,13 +116,15 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			{
 				if (clientsVec[i]->getNickname() != clientNick) { continue; }
 
-				clientsVec[i]->moveClient(clientStepPos);
+				clientNewPos = clientsVec[i]->getPos() + clientStepPos;
+
+				clientsVec[i]->setPos(clientNewPos);
 
 				break;
 			}
 
 			packet.clear();
-			packet << prefix << clientNick << clientStepPos.x << clientStepPos.y;
+			packet << prefix << clientNick << clientNewPos.x << clientNewPos.y;
 			nm->sendPacketToAllClients(packet);
 		}
 
@@ -130,12 +133,56 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			std::wstring bulletCreatorNick = L"";
 			sf::Vector2f bulletAimPos(0.f, 0.f);
 			sf::Vector2f bulletPos(0.f, 0.f);
+			sf::Vector2f currentVelocity(0.f, 0.f);
 
-			if (!(packet >> bulletCreatorNick && packet >> bulletAimPos.x && packet >> bulletAimPos.y && packet >> bulletPos.x && packet >> bulletPos.y)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
+			if (!(packet >> bulletCreatorNick && packet >> bulletAimPos.x && packet >> bulletAimPos.y && packet >> bulletPos.x
+				&& packet >> bulletPos.y && packet >> currentVelocity.x && packet >> currentVelocity.y)) {
+				std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue;
+			}
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			packet.clear();
-			packet << prefix << bulletCreatorNick << bulletAimPos.x << bulletAimPos.y << bulletPos.x << bulletPos.y;
+			packet << prefix << bulletCreatorNick << bulletAimPos.x << bulletAimPos.y << bulletPos.x << bulletPos.y << currentVelocity.x << currentVelocity.y;
+			nm->sendPacketToAllClients(packet);
+		}
+
+		else if (prefix == L"hit")
+		{
+			std::wstring shooterClientNick = L"";
+			std::wstring woundedClientNick = L"";
+			int woundedClientHP = 0;
+			bool woundedClientDead = false;
+
+			if (!(packet >> shooterClientNick && packet >> woundedClientNick)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
+
+			std::lock_guard<std::mutex> lock(clients_mtx);
+			for (size_t i = 0; i < clientsVec.size(); ++i)
+			{
+				if (clientsVec[i]->getNickname() != woundedClientNick) { continue; }
+
+				clientsVec[i]->setHP(clientsVec[i]->getHP() - 10);
+				if (clientsVec[i]->getHP() <= 0) { woundedClientDead = true; }
+
+				woundedClientHP = clientsVec[i]->getHP();
+
+				break;
+			}
+
+			for (size_t i = 0; i < clientsVec.size(); ++i)
+			{
+				if (clientsVec[i]->getNickname() != shooterClientNick) { continue; }
+
+				if (woundedClientHP <= 0)
+				{
+					clientsVec[i]->setNumOfKills(clientsVec[i]->getNumOfKills() + 1);
+				}
+
+				break;
+			}
+
+
+			packet.clear();
+			packet << prefix << shooterClientNick << woundedClientNick << woundedClientHP << woundedClientDead;
 			nm->sendPacketToAllClients(packet);
 		}
 

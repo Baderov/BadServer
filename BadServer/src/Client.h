@@ -11,6 +11,8 @@ private:
 	sf::Vector2f pos;
 	std::wstring nickname;
 	int numOfHeartbeatChecks;
+	int HP;
+	int numOfKills;
 	bool isGhost;
 	bool isBot;
 
@@ -22,12 +24,15 @@ public:
 	sf::Vector2f getPos();
 	std::wstring getNickname();
 	int getNumOfHeartbeatChecks();
+	int getHP();
+	int getNumOfKills();
 	bool getIsGhost();
 	bool getIsBot();
 
-	void moveClient(sf::Vector2f stepPos);
-	void setClientPos(sf::Vector2f pos);
+	void setPos(sf::Vector2f pos);
 	void setNumOfHeartbeatChecks(int numOfHeartbeatChecks);
+	void setHP(int HP);
+	void setNumOfKills(int numOfKills);
 	void setIsGhost(bool isGhost);
 };
 
