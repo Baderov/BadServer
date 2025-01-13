@@ -13,6 +13,7 @@ private:
 	int numOfHeartbeatChecks;
 	int HP;
 	int numOfKills;
+	int numOfDeaths;
 	bool isGhost;
 	bool isBot;
 
@@ -26,6 +27,7 @@ public:
 	int getNumOfHeartbeatChecks();
 	int getHP();
 	int getNumOfKills();
+	int getNumOfDeaths();
 	bool getIsGhost();
 	bool getIsBot();
 
@@ -33,6 +35,7 @@ public:
 	void setNumOfHeartbeatChecks(int numOfHeartbeatChecks);
 	void setHP(int HP);
 	void setNumOfKills(int numOfKills);
+	void setNumOfDeaths(int numOfDeaths);
 	void setIsGhost(bool isGhost);
 };
 

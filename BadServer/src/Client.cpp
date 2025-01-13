@@ -10,6 +10,8 @@ Client::Client(bool& isBot, std::wstring& nickname, sf::IpAddress& ipAddress, un
 	this->port = port;
 	isGhost = false;
 	HP = 100;
+	numOfKills = 0;
+	numOfDeaths = 0;
 
 	pos = sf::Vector2f(static_cast<float>(500 + rand() % 4000), static_cast<float>(500 + rand() % 4000));
 }
@@ -59,6 +61,12 @@ int Client::getNumOfKills()
 	return numOfKills;
 }
 
+int Client::getNumOfDeaths()
+{
+	int numOfDeaths = this->numOfDeaths;
+	return numOfDeaths;
+}
+
 bool Client::getIsGhost()
 {
 	bool isGhost = this->isGhost;
@@ -92,6 +100,11 @@ void Client::setHP(int HP)
 void Client::setNumOfKills(int numOfKills)
 {
 	this->numOfKills = std::move(numOfKills);
+}
+
+void Client::setNumOfDeaths(int numOfDeaths)
+{
+	this->numOfDeaths = std::move(numOfDeaths);
 }
 
 void Client::setIsGhost(bool isGhost)

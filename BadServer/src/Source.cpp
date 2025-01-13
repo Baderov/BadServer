@@ -24,8 +24,17 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 		if (prefix == L"regNick")
 		{
 			std::wstring clientNick = L"";
+			std::wstring clientGameVersion = L"";
 
-			if (!(packet >> clientNick)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
+			if (!(packet >> clientNick && packet >> clientGameVersion)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
+
+			if (clientGameVersion != nm->getGameVersion())
+			{
+				prefix = L"game_version";
+				packet.clear();
+				packet << prefix;
+				nm->sockSend(packet, connection.ipAddress, connection.port);
+			}
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			if (nm->addClient(clientNick, connection.ipAddress, connection.port))
@@ -53,7 +62,10 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			for (size_t i = 0; i < clientsVec.size(); ++i)
 			{
 				packet.clear();
-				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y << clientsVec[i]->getHP();
+
+				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y << clientsVec[i]->getHP() <<
+					clientsVec[i]->getIsBot() << clientsVec[i]->getNumOfKills() << clientsVec[i]->getNumOfDeaths();
+
 				nm->sockSend(packet, connection.ipAddress, connection.port);
 			}
 
@@ -62,7 +74,10 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 				if (clientsVec[i]->getNickname() == clientNick) { continue; }
 
 				packet.clear();
-				packet << prefix << clientNick << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y << clientsVec.back()->getHP();
+
+				packet << prefix << clientNick << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y << clientsVec.back()->getHP() <<
+					clientsVec.back()->getIsBot() << clientsVec.back()->getNumOfKills() << clientsVec.back()->getNumOfDeaths();
+
 				nm->sockSend(packet, clientsVec[i]->getIpAddress(), clientsVec[i]->getPort());
 			}
 		}
@@ -79,6 +94,8 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			{
 				if (clientsVec[i]->getNickname() != clientNick) { continue; }
 
+				clientsVec[i]->setHP(100);
+				clientsVec[i]->setNumOfDeaths(clientsVec[i]->getNumOfDeaths() + 1);
 				clientsVec[i]->setPos(clientStartPos);
 
 				break;
@@ -87,7 +104,6 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			packet.clear();
 			packet << prefix << clientNick << clientStartPos.x << clientStartPos.y;
 			nm->sendPacketToAllClients(packet);
-
 		}
 
 		else if (prefix == L"mousePos")

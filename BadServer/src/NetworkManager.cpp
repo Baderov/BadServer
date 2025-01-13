@@ -3,7 +3,7 @@
 
 const int MAX_NUM_OF_HEARTBEAT_CHECKS = 5;
 
-NetworkManager::NetworkManager() { consoleSettings(); bindPort(); addBots(); }
+NetworkManager::NetworkManager() { setGameVersion(L"0.0.1"); consoleSettings(); bindPort(); addBots(); }
 
 void NetworkManager::bindPort()
 {
@@ -71,7 +71,7 @@ void NetworkManager::pingClients()
 		{
 			sf::Packet packet;
 			std::wstring prefix = L"ping";
-			std::wstring leftTheServerNick = L"";
+			std::wstring disconnectedClient = L"";
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
 			for (size_t i = 0; i < clientsVec.size(); ++i)
@@ -88,7 +88,7 @@ void NetworkManager::pingClients()
 			{
 				if (clientsVec[i]->getNumOfHeartbeatChecks() >= MAX_NUM_OF_HEARTBEAT_CHECKS && !clientsVec[i]->getIsBot())
 				{
-					leftTheServerNick = clientsVec[i]->getNickname();
+					disconnectedClient = clientsVec[i]->getNickname();
 					clientsVec.erase(std::remove(clientsVec.begin(), clientsVec.end(), clientsVec[i]), clientsVec.end());
 
 					printOnlineClients();
@@ -96,9 +96,10 @@ void NetworkManager::pingClients()
 					prefix = L"disconnected";
 
 					packet.clear();
-					packet << prefix << leftTheServerNick;
+					packet << prefix << disconnectedClient;
 
 					sendPacketToAllClients(packet);
+
 					break;
 				}
 			}
@@ -124,4 +125,15 @@ bool NetworkManager::sockNotRecv(sf::Packet& packet, sf::IpAddress& remoteAddres
 	std::lock_guard<std::mutex> lock(mtx);
 	if (this->sock.receive(packet, remoteAddress, remotePort) != sf::Socket::Done) { return true; }
 	return false;
+}
+
+std::wstring NetworkManager::getGameVersion()
+{
+	std::wstring gameVersion = this->gameVersion;
+	return gameVersion;
+}
+
+void NetworkManager::setGameVersion(std::wstring gameVersion)
+{
+	this->gameVersion = std::move(gameVersion);
 }

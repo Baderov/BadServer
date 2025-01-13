@@ -8,6 +8,7 @@ class NetworkManager
 private:
 	std::mutex mtx;
 	sf::UdpSocket sock;
+	std::wstring gameVersion;
 public:
 	NetworkManager();
 
@@ -18,7 +19,10 @@ public:
 	void pingClients();
 	void sockSend(sf::Packet& packet, sf::IpAddress& serverIP, unsigned short& serverPort);
 	void sockSend(sf::Packet& packet, sf::IpAddress&& serverIP, unsigned short&& serverPort);
-	bool sockNotRecv(sf::Packet& packet, sf::IpAddress& remoteAddress, unsigned short& remotePort);;
+	bool sockNotRecv(sf::Packet& packet, sf::IpAddress& remoteAddress, unsigned short& remotePort);
+
+	std::wstring getGameVersion();
+	void setGameVersion(std::wstring gameVersion);
 };
 
 #endif
