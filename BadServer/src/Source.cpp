@@ -34,9 +34,9 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 				packet.clear();
 				packet << prefix;
 				nm->sockSend(packet, connection.ipAddress, connection.port);
+				continue;
 			}
 
-			std::lock_guard<std::mutex> lock(clients_mtx);
 			if (nm->addClient(clientNick, connection.ipAddress, connection.port))
 			{
 				packet.clear();
@@ -56,6 +56,8 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 		{
 			std::wstring clientNick = L"";
 
+			size_t numOfConnectedClients = clientsVec.size();
+
 			if (!(packet >> clientNick)) { std::wcout << L"prefix_" << prefix << "_error!" << std::endl; continue; }
 
 			std::lock_guard<std::mutex> lock(clients_mtx);
@@ -64,7 +66,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 				packet.clear();
 
 				packet << prefix << clientsVec[i]->getNickname() << clientsVec[i]->getPos().x << clientsVec[i]->getPos().y << clientsVec[i]->getHP() <<
-					clientsVec[i]->getIsBot() << clientsVec[i]->getNumOfKills() << clientsVec[i]->getNumOfDeaths();
+					clientsVec[i]->getIsBot() << clientsVec[i]->getNumOfKills() << clientsVec[i]->getNumOfDeaths() << numOfConnectedClients;
 
 				nm->sockSend(packet, connection.ipAddress, connection.port);
 			}
@@ -76,7 +78,7 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 				packet.clear();
 
 				packet << prefix << clientNick << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y << clientsVec.back()->getHP() <<
-					clientsVec.back()->getIsBot() << clientsVec.back()->getNumOfKills() << clientsVec.back()->getNumOfDeaths();
+					clientsVec.back()->getIsBot() << clientsVec.back()->getNumOfKills() << clientsVec.back()->getNumOfDeaths() << numOfConnectedClients;
 
 				nm->sockSend(packet, clientsVec[i]->getIpAddress(), clientsVec[i]->getPort());
 			}
@@ -254,16 +256,105 @@ void handleEvents(std::unique_ptr<NetworkManager>& nm)
 			}
 		}
 
-		else { std::wcout << L"Reading error! prefix: " << prefix << "\n"; }
+		else { std::wcout << L"Readidng error! prefix: " << prefix << "\n"; }
+	}
+}
+
+bool is_number(const std::wstring& s)
+{
+	return !s.empty() && (s.find_first_not_of(L"0123456789") == s.npos);
+}
+
+void consoleEventHandler(std::unique_ptr<Console>& console, std::unique_ptr<NetworkManager>& nm)
+{
+	unsigned int consoleActionNum = 0;
+	unsigned int numOfBots = 0;
+	std::wstring answer;
+
+	while (true)
+	{
+		SetConsoleTextAttribute(console->getHandle(), 11);
+		std::cout << "\nSelect an action:\n1. Add bots.\n2. Kick bot.\n3. Kick all bots.\n4. Kick client.\n5. Print online clients.\n";
+
+		SetConsoleTextAttribute(console->getHandle(), 15);
+		std::cout << "Action: ";
+		std::getline(std::wcin, answer);
+		std::cout << std::endl;
+
+		if (answer == L"1")
+		{
+			std::cout << "Write the number of bots: ";
+			std::getline(std::wcin, answer);
+			if (is_number(answer) && std::stoi(answer) <= 100)
+			{
+				nm->addBots(std::stoi(answer));
+				SetConsoleTextAttribute(console->getHandle(), 14);
+				std::cout << "Bots added!" << std::endl;
+			}
+
+		}
+
+		else if (answer == L"2")
+		{
+			std::cout << "Write the bot's nickname: ";
+			std::getline(std::wcin, answer);
+			if (nm->kickBot(answer))
+			{
+				SetConsoleTextAttribute(console->getHandle(), 14);
+				std::cout << "Bot was kicked out!" << std::endl;
+			}
+			else
+			{
+				SetConsoleTextAttribute(console->getHandle(), 12);
+				std::cout << "Wrong nickname!" << std::endl;
+			}
+		}
+
+		else if (answer == L"3")
+		{
+			nm->kickAllBots();
+			SetConsoleTextAttribute(console->getHandle(), 14);
+			std::cout << "Bots was kicked out!" << std::endl;
+		}
+
+		else if (answer == L"4")
+		{
+			std::cout << "Write the client's nickname: ";
+			std::getline(std::wcin, answer);
+			if (nm->kickClient(answer))
+			{
+				SetConsoleTextAttribute(console->getHandle(), 14);
+				std::cout << "Client was kicked out!" << std::endl;
+			}
+			else
+			{
+				SetConsoleTextAttribute(console->getHandle(), 12);
+				std::cout << "Wrong nickname!" << std::endl;
+			}
+		}
+
+		else if (answer == L"5")
+		{
+			console->printOnlineClients();
+		}
+		else
+		{
+			SetConsoleTextAttribute(console->getHandle(), 12);
+			std::cout << "Wrong action!" << std::endl;
+		}
 	}
 }
 
 int main()
 {
+	auto console = std::make_unique<Console>();
 	auto nm = std::make_unique<NetworkManager>();
 
 	std::thread pingThread([&]() { nm->pingClients(); });
 	pingThread.detach();
+
+	std::thread consoleThread([&]() { consoleEventHandler(console, nm); });
+	consoleThread.detach();
 
 	handleEvents(nm);
 

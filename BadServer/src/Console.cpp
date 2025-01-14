@@ -1,10 +1,14 @@
 #include "pch.h"
 #include "Console.h"
 
-void consoleSettings()
+Console::Console() { setConsoleSettings(); }
+
+HANDLE& Console::getHandle() { return handle; }
+
+void Console::setConsoleSettings()
 {
 	setlocale(LC_ALL, "RUS"); // for Cyrillic in the console.
-	// remove the ability to select and perform various actions in the console.
+	//// remove the ability to select and perform various actions in the console.
 	handle = GetStdHandle(STD_INPUT_HANDLE);
 	DWORD mode;
 	GetConsoleMode(handle, &mode);
@@ -13,12 +17,13 @@ void consoleSettings()
 	mode &= ~ENABLE_MOUSE_INPUT;
 	SetConsoleMode(handle, mode);
 	handle = GetStdHandle(STD_OUTPUT_HANDLE);
-	SetConsoleTextAttribute(handle, 14);
+	SetConsoleTextAttribute(handle, 15);
 }
 
-void printOnlineClients()
+void Console::printOnlineClients()
 {
-	SetConsoleTextAttribute(handle, 11);
+	std::lock_guard<std::mutex> lock(clients_mtx);
+	SetConsoleTextAttribute(handle, 14);
 	std::wcout << L"\nOnline clients: \n";
 	std::wcout << L"--------------------------------------------------------------------\n";
 	if (clientsVec.size() > 0)
@@ -31,10 +36,7 @@ void printOnlineClients()
 
 	else
 	{
-		SetConsoleTextAttribute(handle, 14);
 		std::wcout << L"***Server is empty!***\n";
-		SetConsoleTextAttribute(handle, 11);
 	}
 	std::wcout << L"--------------------------------------------------------------------\n\n";
-	SetConsoleTextAttribute(handle, 15);
 }

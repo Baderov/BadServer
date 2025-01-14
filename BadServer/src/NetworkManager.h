@@ -9,12 +9,19 @@ private:
 	std::mutex mtx;
 	sf::UdpSocket sock;
 	std::wstring gameVersion;
+	bool showOnlineClients;
+	static unsigned int botID;
 public:
 	NetworkManager();
 
 	void bindPort();
-	void addBots();
+
+	void addBots(unsigned int numOfBots);
+	bool kickBot(std::wstring& botNick);
+	void kickAllBots();
 	bool addClient(std::wstring& clientNick, sf::IpAddress& ipAddress, unsigned short& port);
+	bool kickClient(std::wstring& clientNick);
+
 	void sendPacketToAllClients(sf::Packet& packet);
 	void pingClients();
 	void sockSend(sf::Packet& packet, sf::IpAddress& serverIP, unsigned short& serverPort);

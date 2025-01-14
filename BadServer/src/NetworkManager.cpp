@@ -3,7 +3,13 @@
 
 const int MAX_NUM_OF_HEARTBEAT_CHECKS = 5;
 
-NetworkManager::NetworkManager() { setGameVersion(L"0.0.1"); consoleSettings(); bindPort(); addBots(); }
+unsigned int NetworkManager::botID = 0;
+
+NetworkManager::NetworkManager()
+{
+	setGameVersion(L"0.0.2");
+	bindPort();
+}
 
 void NetworkManager::bindPort()
 {
@@ -25,22 +31,78 @@ void NetworkManager::bindPort()
 	sock.setBlocking(false);
 }
 
-void NetworkManager::addBots()
+void NetworkManager::addBots(unsigned int numOfBots)
 {
-	bool isBot = true;
-
 	std::lock_guard<std::mutex> lock(clients_mtx);
-	for (int i = 0; i < 15; ++i)
+	sf::Packet packet;
+	std::wstring prefix = L"connected";
+	bool isBot = true;
+	size_t numOfConnectedClients = clientsVec.size();
+	for (unsigned int i = 0; i < numOfBots; ++i)
 	{
-		std::wstring botNick = L"Bot" + std::to_wstring(i);
-		sf::IpAddress botIP = "192.168.1.2" + std::to_string(i);
-		unsigned short botPort = 2000 + i;
+		std::wstring botNick = L"Bot" + std::to_wstring(botID);
+		sf::IpAddress botIP = std::to_string(botID);
+		unsigned short botPort = botID;
+		botID++;
 		clientsVec.emplace_back(std::make_unique<Client>(isBot, botNick, botIP, botPort));
+
+		packet.clear();
+		packet << prefix << clientsVec.back()->getNickname() << clientsVec.back()->getPos().x << clientsVec.back()->getPos().y <<
+			clientsVec.back()->getHP() << clientsVec.back()->getIsBot() << clientsVec.back()->getNumOfKills() << clientsVec.back()->getNumOfDeaths() << numOfConnectedClients;
+
+		sendPacketToAllClients(packet);
 	}
 }
 
+bool NetworkManager::kickBot(std::wstring& botNick)
+{
+	std::lock_guard<std::mutex> lock(clients_mtx);
+	for (size_t i = 0; i < clientsVec.size(); ++i)
+	{
+		if (clientsVec[i]->getNickname() != botNick || !clientsVec[i]->getIsBot()) { continue; }
+
+		clientsVec.erase(std::remove(clientsVec.begin(), clientsVec.end(), clientsVec[i]), clientsVec.end());
+
+		sf::Packet packet;
+		std::wstring prefix = L"disconnected";
+
+		packet.clear();
+		packet << prefix << botNick;
+
+		sendPacketToAllClients(packet);
+
+		return true;
+	}
+	return false;
+}
+
+void NetworkManager::kickAllBots()
+{
+	std::lock_guard<std::mutex> lock(clients_mtx);
+
+	clientsVec.erase(remove_if(clientsVec.begin(), clientsVec.end(), [&](std::unique_ptr<Client>& client)
+		{
+			if (client->getIsBot())
+			{
+				std::wstring botNick = client->getNickname();
+				sf::Packet packet;
+				std::wstring prefix = L"disconnected";
+
+				packet.clear();
+				packet << prefix << botNick;
+
+				sendPacketToAllClients(packet);
+
+				return this;
+			}
+		}), clientsVec.end());
+}
+
+
+
 bool NetworkManager::addClient(std::wstring& clientNick, sf::IpAddress& ipAddress, unsigned short& port)
 {
+	std::lock_guard<std::mutex> lock(clients_mtx);
 	for (size_t i = 0; i < clientsVec.size(); ++i)
 	{
 		if (clientsVec[i]->getNickname() == clientNick) { return false; }
@@ -50,9 +112,29 @@ bool NetworkManager::addClient(std::wstring& clientNick, sf::IpAddress& ipAddres
 
 	clientsVec.emplace_back(std::make_unique<Client>(isBot, clientNick, ipAddress, port));
 
-	printOnlineClients();
-
 	return true;
+}
+
+bool NetworkManager::kickClient(std::wstring& clientNick)
+{
+	std::lock_guard<std::mutex> lock(clients_mtx);
+	for (size_t i = 0; i < clientsVec.size(); ++i)
+	{
+		if (clientsVec[i]->getNickname() != clientNick || clientsVec[i]->getIsBot()) { continue; }
+
+		clientsVec.erase(std::remove(clientsVec.begin(), clientsVec.end(), clientsVec[i]), clientsVec.end());
+
+		sf::Packet packet;
+		std::wstring prefix = L"disconnected";
+
+		packet.clear();
+		packet << prefix << clientNick;
+
+		sendPacketToAllClients(packet);
+
+		return true;
+	}
+	return false;
 }
 
 void NetworkManager::sendPacketToAllClients(sf::Packet& packet)
@@ -90,8 +172,6 @@ void NetworkManager::pingClients()
 				{
 					disconnectedClient = clientsVec[i]->getNickname();
 					clientsVec.erase(std::remove(clientsVec.begin(), clientsVec.end(), clientsVec[i]), clientsVec.end());
-
-					printOnlineClients();
 
 					prefix = L"disconnected";
 

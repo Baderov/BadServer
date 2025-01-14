@@ -6,6 +6,8 @@
 
 void handleEvents(std::unique_ptr<NetworkManager>& nm);
 
+void consoleEventHandler(std::unique_ptr<Console>& console, std::unique_ptr<NetworkManager>& nm);
+
 int main();
 
 #endif

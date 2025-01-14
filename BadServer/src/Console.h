@@ -3,10 +3,18 @@
 
 #include "Client.h"
 
-void consoleSettings();
+class Console
+{
+private:
+	HANDLE handle;
+	bool showOnlineClients;
+	std::mutex mtx;
+public:
+	Console();
 
-void printOnlineClients();
-
-inline HANDLE handle;
+	HANDLE& getHandle();
+	void setConsoleSettings();
+	void printOnlineClients();
+};
 
 #endif
